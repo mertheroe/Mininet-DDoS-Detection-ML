@@ -1,0 +1,45 @@
+# My mininet Fat Tree topology 17 host, 3 switch, one controller to be POX
+from mininet.net import Mininet
+from mininet.topo import Topo
+from mininet.node import RemoteController
+
+class MyTopology(Topo):
+    def build(self):
+        # Anahtarlayıcıları oluştur
+        s1 = self.addSwitch('s1')
+        s2 = self.addSwitch('s2')
+        s3 = self.addSwitch('s3')
+
+        # Anahtarlayıcıları kontrolcüye bağla
+        self.addLink(s1, s2)
+        self.addLink(s1, s3)
+
+        # Anahtarlayıcılara bağlı ana bilgisayarları oluştur
+        for i in range(8):
+            host = self.addHost(f'h{i + 1}')
+            self.addLink(host, s2)
+            print(f'host kuruldu h{i + 1}')
+
+        for i in range(9):
+            host = self.addHost(f'h{i + 9}')
+            self.addLink(host, s3)
+            print(f'host kuruldu h{i + 9}')
+
+def main():
+    # Topolojiyi oluştur
+    topo = MyTopology()
+
+    # Mininet'e bağlı olarak bir denetleyici oluştur
+    net = Mininet(topo=topo, controller=lambda name: RemoteController(name, ip='127.0.0.1', port=6633))
+
+    # Mininet'i başlat
+    net.start()
+
+    # CLI'yi başlat
+    net.interact()
+
+    # Mininet'i durdur
+    net.stop()
+
+if name == 'main':
+    main()
