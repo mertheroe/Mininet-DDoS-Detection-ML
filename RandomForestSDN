@@ -1,0 +1,93 @@
+# Random Forest
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, roc_curve, auc
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Veri setinizi ve etiketlerinizi buraya yükleyin
+datasetx = df.drop(columns=["DDoS"])
+X = datasetx
+y = df["DDoS"]
+
+def k_fold_cross_validation(X, y, k=20, n_estimators=100):
+    fold_size = len(X) // k
+    accuracy_scores = []
+    f1_scores = []
+    precision_scores = []
+    recall_scores = []
+    all_true_labels = []
+    all_predictions = []
+
+    for i in range(k):
+        # Test ve eğitim verilerini ayırma
+        test_indices = list(range(i * fold_size, (i + 1) * fold_size))
+        train_indices = list(set(range(len(X))) - set(test_indices))
+        X_train, X_test = X.iloc[train_indices], X.iloc[test_indices]
+        y_train, y_test = y.iloc[train_indices], y.iloc[test_indices]
+
+        # Random Forest modeli oluşturma ve eğitme
+        rf_model = RandomForestClassifier(n_estimators=n_estimators)
+        rf_model.fit(X_train, y_train)
+
+        # Tahmin yapma
+        predictions = rf_model.predict(X_test)
+
+        # Metrikleri hesaplama
+        accuracy = accuracy_score(y_test, predictions)
+        f1 = f1_score(y_test, predictions, average='macro', zero_division=1)
+        precision = precision_score(y_test, predictions, average='macro', zero_division=1)
+        recall = recall_score(y_test, predictions, average='macro', zero_division=1)
+
+        # Metrikleri listeye ekleme
+        accuracy_scores.append(accuracy)
+        f1_scores.append(f1)
+        precision_scores.append(precision)
+        recall_scores.append(recall)
+
+        all_true_labels.extend(y_test)
+        all_predictions.extend(predictions)
+
+        # Sonuçları yazdırma
+        print(f"Fold {i+1}:")
+        print(f"Accuracy: {accuracy}")
+        print(f"F1 Score: {f1}")
+        print(f"Precision: {precision}")
+        print(f"Recall: {recall}")
+        print()
+
+    # Ortalama metrikleri yazdırma
+    print("Ortalama Metrikler:")
+    print(f"Average Accuracy: {np.mean(accuracy_scores)}")
+    print(f"Average F1 Score: {np.mean(f1_scores)}")
+    print(f"Average Precision: {np.mean(precision_scores)}")
+    print(f"Average Recall: {np.mean(recall_scores)}")
+
+    # Confusion matrix oluşturma
+    cm = confusion_matrix(all_true_labels, all_predictions)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=['DDoS Değil', 'DDoS'], yticklabels=['DDoS Değil', 'DDoS'])
+    plt.xlabel('Tahmin Edilen')
+    plt.ylabel('Gerçek')
+    plt.title('Confusion Matrix')
+    plt.show()
+
+    # ROC eğrisi oluşturma
+    fpr, tpr, thresholds = roc_curve(all_true_labels, all_predictions)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend(loc="lower right")
+    plt.show()
+
+# Fonksiyonu çağırma
+k_fold_cross_validation(X, y)
+
